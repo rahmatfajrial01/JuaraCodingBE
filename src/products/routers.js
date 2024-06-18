@@ -6,30 +6,47 @@ const {
   productControllerUpdate,
   productControllerDelete,
 } = require("./controllers");
-
-const { validationMiddleware } = require("../utils/middlewares");
 const {
-  productValidationCreate,
-  productValidationUpdate,
-} = require("./validations");
+  jwtAuthMiddleware,
+  validationMiddleware,
+} = require("../utils/middlewares");
+
+const { charField, positiveIntegerField } = require("../utils/fields");
 
 const productRouter = express.Router();
-
 const PATH_PRODUCT = "/products";
 
-productRouter.get("/", productControllerList);
-productRouter.get("/:id", productControllerDetail);
+productRouter.get("/", [jwtAuthMiddleware], productControllerList);
+
+productRouter.get("/:id", [jwtAuthMiddleware], productControllerDetail);
+
 productRouter.post(
   "/",
-  [validationMiddleware(productValidationCreate)],
+  [
+    jwtAuthMiddleware,
+    validationMiddleware([
+      charField("name"),
+      positiveIntegerField("price"),
+      positiveIntegerField("stock"),
+    ]),
+  ],
   productControllerCreate
 );
+
 productRouter.put(
   "/:id",
-  [validationMiddleware(productValidationUpdate)],
+  [
+    jwtAuthMiddleware,
+    validationMiddleware([
+      charField("name", true),
+      positiveIntegerField("price", true),
+      positiveIntegerField("stock", true),
+    ]),
+  ],
   productControllerUpdate
 );
-productRouter.delete("/:id", productControllerDelete);
+
+productRouter.delete("/:id", [jwtAuthMiddleware], productControllerDelete);
 
 module.exports = {
   productRouter,

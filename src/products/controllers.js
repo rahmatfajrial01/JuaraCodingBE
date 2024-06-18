@@ -1,9 +1,13 @@
 const { exceptionHandler, Error404 } = require("../utils/errors");
+const { filterSearch } = require("../utils/filters");
+const { buildPagination } = require("../utils/paginations");
 const { Product } = require("./models");
 
 const productControllerList = async (req, res) => {
   try {
-    const result = await Product.find();
+    let result = Product.find({ owner: res.locals.user._id, isDelete: false });
+    result = filterSearch(req, result);
+    result = await buildPagination(req, result);
     res.status(200).json(result);
   } catch (error) {
     return exceptionHandler(error, res);
@@ -12,7 +16,10 @@ const productControllerList = async (req, res) => {
 
 const productControllerCreate = async (req, res) => {
   try {
-    const result = await Product.create(res.locals.matchedData);
+    const result = await Product.create({
+      ...res.locals.matchedData,
+      owner: res.locals.user._id,
+    });
     return res.status(201).json(result);
   } catch (error) {
     return exceptionHandler(error, res);
@@ -21,10 +28,15 @@ const productControllerCreate = async (req, res) => {
 
 const productControllerDetail = async (req, res) => {
   try {
-    let result = await Product.findOne({ _id: req.params.id });
+    const result = await Product.findOne({
+      _id: req.params.id,
+      owner: res.locals.user._id,
+      isDelete: false,
+    });
     if (!result) {
       throw new Error404();
     }
+
     return res.status(200).json(result);
   } catch (error) {
     return exceptionHandler(error, res);
@@ -33,7 +45,11 @@ const productControllerDetail = async (req, res) => {
 
 const productControllerUpdate = async (req, res) => {
   try {
-    let result = await Product.findOne({ _id: req.params.id });
+    let result = await Product.findOne({
+      _id: req.params.id,
+      owner: res.locals.user._id,
+      isDelete: false,
+    });
     if (!result) {
       throw new Error404();
     }
@@ -51,13 +67,20 @@ const productControllerUpdate = async (req, res) => {
 
 const productControllerDelete = async (req, res) => {
   try {
-    let result = await Product.findOne({ _id: req.params.id });
+    const result = await Product.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        owner: res.locals.user._id,
+        isDelete: false,
+      },
+      { isDelete: true }
+    );
+
     if (!result) {
       throw new Error404();
     }
 
-    await Product.findOneAndDelete({ _id: req.params.id });
-    res.status(204).json(null);
+    return res.status(204).json(null);
   } catch (error) {
     return exceptionHandler(error, res);
   }
@@ -66,7 +89,7 @@ const productControllerDelete = async (req, res) => {
 module.exports = {
   productControllerList,
   productControllerCreate,
+  productControllerDetail,
   productControllerUpdate,
   productControllerDelete,
-  productControllerDetail,
 };

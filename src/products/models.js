@@ -4,6 +4,11 @@ const productObject = {
   name: { type: String, required: true },
   price: { type: Number, required: true, default: 0 },
   stock: { type: Number, required: true, min: 1 },
+  isDelete: { type: Boolean, default: false },
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
 };
 
 const productSchema = new mongoose.Schema(productObject, {
